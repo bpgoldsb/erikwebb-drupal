@@ -33,6 +33,11 @@ define drupal::core(
   $path    = '/var/www/html',
 ) {
 
+  $path_files = "${path}/sites/default/files"
+  $path_default_settings = "${path}/sites/default/default.settings.php"
+  $path_settings = "${path}/sites/default/settings.php"
+  $cmd_install = "drush-drupal-core-download-${path}"
+
   if $version != 'latest' {
     $package = "drupal-${version}"
   } else {
@@ -44,11 +49,28 @@ define drupal::core(
   $path_prefix = join(values_at($path_parts, join([0, $path_count - 2], '-')), '/')
   $drupal_dir  = values_at($path_parts, "${path_count - 1}")
 
-  drush::exec { 'drush-drupal-core-download-${path}':
+  drush::exec { $cmd_install:
     command => "pm-download ${package}",
     options => [ "--destination=${path_prefix}", "--drupal-project-rename=${drupal_dir}" ],
     # /var/www/html probably exists already, so farce an overwrite
     force   => $path == '/var/www/html',
   }
+
+  file { $path_files:
+    ensure  => directory,
+    owner   => 'apache',
+    mode    => 0640,
+    require => Drush::Exec[$cmd_install],
+  }
+
+  file { $path_settings:
+    source  => $path_default_settings,
+    owner   => 'apache',
+    group   => 0,
+    mode    => 0640,
+    replace => false,
+    require => Drush::Exec[$cmd_install],
+  }
+    
 
 }

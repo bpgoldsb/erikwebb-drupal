@@ -31,6 +31,8 @@
 #
 class drupal {
 
+  package { [ 'php-xml', 'php-dom', 'php-gd', 'php-mbstring']: }
+
   class { 'drush':
     version => '5.8.0',
   }
